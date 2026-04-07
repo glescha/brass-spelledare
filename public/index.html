@@ -1,12 +1,125 @@
-async function sendToAgent(message) {
-    const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            userMessage: message, 
-            infoLevel: window.selectedLevel || 1 
-        })
-    });
-    const data = await response.json();
-    displayTelegraphEffect(data.reply); // Din befintliga funktion för att visa text
-}
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Brass: Birmingham - Det Industriella Manifestet</title>
+    <style>
+        :root {
+            --bg-dark: #070605;
+            --bg-page: #100e0c;
+            --brass-gold: #d4af37;
+            --text-primary: #e6e1d8;
+            --font-main: 'Georgia', serif;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #chat-output {
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+            border: 1px solid var(--brass-gold);
+            padding: 20px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+        .agent-answer { color: var(--text-primary); line-height: 1.6; }
+        .user-message { color: var(--brass-gold); font-weight: bold; margin-top: 10px; }
+        input { 
+            width: 80%; 
+            padding: 10px; 
+            background: #222; 
+            border: 1px solid var(--brass-gold); 
+            color: white; 
+        }
+        button { 
+            padding: 10px; 
+            background: var(--brass-gold); 
+            border: none; 
+            cursor: pointer; 
+        }
+        .active { display: block !important; }
+        #app-container { display: none; }
+        #splash-screen { text-align: center; padding: 50px; }
+    </style>
+</head>
+<body>
+
+<div id="splash-screen" class="active">
+    <h1>VÄLJ INFORMATION SNIVÅ</h1>
+    <button onclick="startGame(1)">1: GRUNDLÄGGANDE</button>
+    <button onclick="startGame(2)">2: AVANCERAD</button>
+    <button onclick="startGame(3)">3: TOTAL KONTROLL</button>
+</div>
+
+<div id="app-container">
+    <div id="chat-output"></div>
+    <input type="text" id="user-input" placeholder="Fråga maskinen...">
+    <button onclick="handleUserInput()">SKICKA</button>
+</div>
+
+<script>
+    let currentLevel = 1;
+
+    function startGame(level) {
+        currentLevel = level;
+        document.getElementById('splash-screen').style.display = 'none';
+        document.getElementById('app-container').classList.add('active');
+        sendToAgent("Inled spelet och hälsa oss välkomna utifrån det industriella manifestet.");
+    }
+
+    async function handleUserInput() {
+        const inputField = document.getElementById('user-input');
+        const message = inputField.value.trim();
+        if (!message) return;
+
+        const chatOutput = document.getElementById('chat-output');
+        chatOutput.innerHTML += `<div class="user-message">SPELARE: ${message}</div>`;
+        inputField.value = '';
+        await sendToAgent(message);
+    }
+
+    async function sendToAgent(message) {
+        const output = document.getElementById('chat-output');
+        const thought = document.createElement('div');
+        thought.textContent = "MASKINEN ANALYSERAR...";
+        output.appendChild(thought);
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userMessage: message, infoLevel: currentLevel })
+            });
+            const data = await response.json();
+            output.removeChild(thought);
+            displayTelegraphEffect(data.reply);
+        } catch (e) {
+            output.innerHTML += "<div>[FEL I LEDNINGARNA]</div>";
+        }
+    }
+
+    function displayTelegraphEffect(text) {
+        const output = document.getElementById('chat-output');
+        const div = document.createElement('div');
+        div.className = 'agent-answer';
+        output.appendChild(div);
+        let i = 0;
+        const timer = setInterval(() => {
+            if (i < text.length) { div.innerHTML += text.charAt(i); i++; }
+            else { clearInterval(timer); }
+            output.scrollTop = output.scrollHeight;
+        }, 20);
+    }
+</script>
+</body>
+</html>
