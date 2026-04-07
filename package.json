@@ -1,0 +1,9 @@
+{
+  "name": "brass-spelledare",
+  "version": "1.0.0",
+  "description": "Industriell spelledare för Brass Birmingham",
+  "main": "api/chat.js",
+  "dependencies": {
+    "@google/generative-ai": "^0.11.0"
+  }
+}
