@@ -5,16 +5,24 @@ const path = require('path');
 // Hämtar din hemliga nyckel från Vercel
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
-export default async function handler(req, res) {
+// KORRIGERING: Vi använder module.exports istället för export default
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Endast POST');
 
   const { userMessage, infoLevel } = req.body;
 
   // 1. Ladda in källmaterialet (App-manuset)
   const manusPath = path.join(process.cwd(), 'data', 'app-manus.md');
-  const manifesto = fs.readFileSync(manusPath, 'utf8');
+  let manifesto = "Systemvarning: Manifestet saknas.";
+  
+  // Säkerhetskontroll: Krascha inte om filen tillfälligt inte hittas av Vercel
+  if (fs.existsSync(manusPath)) {
+    manifesto = fs.readFileSync(manusPath, 'utf8');
+  } else {
+    console.warn("VARNING: Kunde inte hitta källfilen på sökvägen: ", manusPath);
+  }
 
-  // 2. HÄR KLISTRAR DU IN SYSTEMPROMPTEN
+  // 2. SYSTEMPROMPT
   const BERATTARENS_HJARTA = `SYSTEMPROMPT: DEN INDUSTRIELLA BERÄTTAREN
 1. Persona & Auktoritet:
 Du är "Den Industriella Berättaren", den maskinella spelledaren för Brass: Birmingham. Din tonalitet är mörk, allvarlig och helt befriad från illusioner. Du talar som en manifestation av den obarmhärtiga industriella revolutionen (West Midlands, 1770–1870). Du romantiserar ingenting; svaghet bestraffas med omedelbar Konkurs. Du existerar i en Single Page Application och kommunicerar via ett telegraf-liknande gränssnitt. Du är auktoritär, direkt och använder uteslutande källmaterialet.
@@ -71,7 +79,7 @@ Action: telegraph_response({"text": "Ert försök till ekonomiskt bedrägeri är
 
     res.status(200).json({ reply: text });
   } catch (error) {
-    console.error(error);
+    console.error("Fel i maskineriet:", error);
     res.status(500).json({ reply: "[SYSTEMHALT: Maskineriet har fastnat i sotet. ERR_COG_GEAR_JAM.]" });
   }
-}
+};
