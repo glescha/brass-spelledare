@@ -6,26 +6,37 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: "Endast POST" });
+
     try {
         const { userMessage, infoLevel } = req.body;
-        // Vi söker efter båda möjliga filnamnen för att vara säkra
-        let manifesto = "Manifest saknas.";
-        const paths = [
-            path.join(process.cwd(), 'data', 'app-manus.md'),
-            path.join(process.cwd(), 'data', 'App-manus_ Brass Birmingham - Komplett.md')
-        ];
-        for (const p of paths) {
-            if (fs.existsSync(p)) {
-                manifesto = fs.readFileSync(p, 'utf8');
-                break;
-            }
+        
+        // DEBUG: Kontrollera om nyckeln finns överhuvudtaget
+        if (!process.env.GOOGLE_API_KEY) {
+            return res.status(500).json({ reply: "[DEBUG-FEL: API-nyckeln saknas helt i Vercel Settings]" });
         }
-        if (!process.env.GOOGLE_API_KEY) return res.status(500).json({ reply: "[FEL: API-nyckel saknas i Vercel Settings]" });
+
+        // Lokalisera manuset
+        const manusPath = path.join(process.cwd(), 'data', 'app-manus.md');
+        let manifesto = "Manifest saknas.";
+        if (fs.existsSync(manusPath)) {
+            manifesto = fs.readFileSync(manusPath, 'utf8');
+        } else {
+            return res.status(500).json({ reply: "[DEBUG-FEL: Kan inte hitta filen data/app-manus.md på servern]" });
+        }
+
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash",
-            systemInstruction: `Du är Den Industriella Berättaren i Brass Birmingham. Mörk och allvarlig tonalitet. Använd EXAKT detta källmaterial: ${manifesto}. Nivå: ${infoLevel}`
+            systemInstruction: `Du är Den Industriella Berättaren. Nivå: ${infoLevel}. Källa: ${manifesto}`
         });
+
+        // Gör anropet
         const result = await model.generateContent(userMessage);
-        res.status(200).json({ reply: result.response.text() });
-    } catch (error) { res.status(500).json({ reply: "[SYSTEMHALT: Maskineriet kraschade.]" }); }
+        const text = result.response.text();
+        
+        res.status(200).json({ reply: text });
+
+    } catch (error) {
+        // Skicka ut det riktiga felet till frontend så vi ser vad som händer
+        res.status(500).json({ reply: `[DEBUG-KRASCH: ${error.message}]` });
+    }
 };
