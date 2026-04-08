@@ -24,9 +24,10 @@ module.exports = async function handler(req, res) {
             return res.status(500).json({ reply: "[DEBUG-FEL: Kan inte hitta filen data/app-manus.md på servern]" });
         }
 
+        // Ändra från "gemini-1.5-flash" till "gemini-2.5-flash"
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
-            systemInstruction: `Du är Den Industriella Berättaren. Nivå: ${infoLevel}. Källa: ${manifesto}`
+          model: "gemini-2.5-flash", 
+          systemInstruction: BERATTARENS_HJARTA + `\n\nSPELARSTATUS: Aktuell informationsnivå är ${infoLevel}.\n\nKÄLLMATERIAL:\n${manifesto}`
         });
 
         // Gör anropet
