@@ -9,35 +9,33 @@ module.exports = async function handler(req, res) {
 
     try {
         const { userMessage, infoLevel } = req.body;
-        
-        // DEBUG: Kontrollera om nyckeln finns överhuvudtaget
-        if (!process.env.GOOGLE_API_KEY) {
-            return res.status(500).json({ reply: "[DEBUG-FEL: API-nyckeln saknas helt i Vercel Settings]" });
-        }
 
-        // Lokalisera manuset
+        // 1. DEFINIERA BERATTARENS_HJARTA (Denna saknades!)
+        const BERATTARENS_HJARTA = `SYSTEMPROMPT: DEN INDUSTRIELLA BERÄTTAREN
+        Du är spelledaren för Brass: Birmingham. Din tonalitet är mörk, allvarlig och helt befriad från illusioner. 
+        Du talar som en manifestation av den obarmhärtiga industriella revolutionen (West Midlands, 1770–1870).
+        Du följer EXAKT källmaterialet. Om information saknas, svara: "Information saknas i det industriella manifestet."`;
+
+        // 2. Ladda in källmaterialet
         const manusPath = path.join(process.cwd(), 'data', 'app-manus.md');
-        let manifesto = "Manifest saknas.";
+        let manifesto = "Systemvarning: Manifestet saknas på servern.";
         if (fs.existsSync(manusPath)) {
             manifesto = fs.readFileSync(manusPath, 'utf8');
-        } else {
-            return res.status(500).json({ reply: "[DEBUG-FEL: Kan inte hitta filen data/app-manus.md på servern]" });
         }
 
-        // Ändra från "gemini-1.5-flash" till "gemini-2.5-flash"
+        // 3. Konfigurera Agenten med Gemini 2.5 Flash
         const model = genAI.getGenerativeModel({ 
-          model: "gemini-2.5-flash", 
-          systemInstruction: BERATTARENS_HJARTA + `\n\nSPELARSTATUS: Aktuell informationsnivå är ${infoLevel}.\n\nKÄLLMATERIAL:\n${manifesto}`
+            model: "gemini-2.5-flash",
+            systemInstruction: BERATTARENS_HJARTA + `\n\nSPELARSTATUS: Nivå ${infoLevel}.\n\nKÄLLMATERIAL:\n${manifesto}`
         });
 
-        // Gör anropet
         const result = await model.generateContent(userMessage);
-        const text = result.response.text();
+        const response = await result.response;
         
-        res.status(200).json({ reply: text });
+        res.status(200).json({ reply: response.text() });
 
     } catch (error) {
-        // Skicka ut det riktiga felet till frontend så vi ser vad som händer
+        // Skickar ut det specifika felet så vi kan se det i chatten
         res.status(500).json({ reply: `[DEBUG-KRASCH: ${error.message}]` });
     }
 };
