@@ -6,23 +6,26 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: "Endast POST" });
-
     try {
         const { userMessage, infoLevel } = req.body;
-        const manusPath = path.join(process.cwd(), 'data', 'app-manus.md');
+        // Vi söker efter båda möjliga filnamnen för att vara säkra
         let manifesto = "Manifest saknas.";
-        if (fs.existsSync(manusPath)) {
-            manifesto = fs.readFileSync(manusPath, 'utf8');
+        const paths = [
+            path.join(process.cwd(), 'data', 'app-manus.md'),
+            path.join(process.cwd(), 'data', 'App-manus_ Brass Birmingham - Komplett.md')
+        ];
+        for (const p of paths) {
+            if (fs.existsSync(p)) {
+                manifesto = fs.readFileSync(p, 'utf8');
+                break;
+            }
         }
-
+        if (!process.env.GOOGLE_API_KEY) return res.status(500).json({ reply: "[FEIL: API-nyckel saknas i Vercel Settings]" });
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash",
-            systemInstruction: `Du är "Den Industriella Berättaren" för spelet Brass: Birmingham. Din tonalitet är mörk, sotig, allvarlig och utan illusioner. Din ontologi bygger EXAKT på detta manifest: ${manifesto}. Spelarna har valt informationsnivå ${infoLevel}.`
+            systemInstruction: `Du är Den Industriella Berättaren i Brass Birmingham. Mörk och allvarlig tonalitet. Använd EXAKT detta källmaterial: ${manifesto}. Nivå: ${infoLevel}`
         });
-
         const result = await model.generateContent(userMessage);
         res.status(200).json({ reply: result.response.text() });
-    } catch (error) {
-        res.status(500).json({ reply: "[SYSTEMHALT: Maskineriet kraschade. Kontrollera din API-nyckel i Vercel.]" });
-    }
+    } catch (error) { res.status(500).json({ reply: "[SYSTEMHALT: Maskineriet kraschade.]" }); }
 };
