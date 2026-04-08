@@ -2,130 +2,47 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Brass: Birmingham - Det Industriella Manifestet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brass Birmingham - Berättaren</title>
     <style>
-        :root {
-            --bg-dark: #070605;
-            --brass-gold: #d4af37;
-            --text-primary: #e6e1d8;
-        }
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-primary);
-            font-family: 'Georgia', serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-        #chat-output {
-            width: 100%;
-            max-width: 800px;
-            height: 500px;
-            border: 2px solid var(--brass-gold);
-            padding: 20px;
-            overflow-y: auto;
-            background: rgba(15, 13, 10, 0.9);
-            margin-bottom: 20px;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
-        }
-        .agent-answer { color: var(--text-primary); line-height: 1.6; margin-bottom: 15px; border-left: 3px solid var(--brass-gold); padding-left: 15px; white-space: pre-wrap; }
-        .user-message { color: var(--brass-gold); font-weight: bold; margin-bottom: 10px; text-align: right; }
-        .thought { font-style: italic; color: #888; font-size: 0.9em; margin-bottom: 10px; }
-        .input-container { width: 100%; max-width: 800px; display: flex; gap: 10px; }
-        input { flex-grow: 1; padding: 15px; background: #1a1714; border: 1px solid var(--brass-gold); color: white; outline: none; }
-        button { padding: 15px 30px; background: var(--brass-gold); border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #f3d56a; }
-        #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        body { background: #070605; color: #e6e1d8; font-family: serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; }
+        #chat-output { width: 90%; max-width: 700px; height: 400px; border: 1px solid #d4af37; padding: 20px; overflow-y: auto; background: #100e0c; margin: 20px 0; }
+        input { width: 70%; padding: 10px; background: #1a1714; border: 1px solid #d4af37; color: white; }
+        button { padding: 10px 20px; background: #d4af37; border: none; cursor: pointer; font-weight: bold; }
+        .user-msg { color: #d4af37; margin-top: 10px; font-weight: bold; }
+        .agent-msg { line-height: 1.6; border-left: 2px solid #4a3d12; padding-left: 10px; margin-bottom: 15px; }
+        #splash { position: fixed; inset: 0; background: #070605; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
-
-<div id="splash-screen">
-    <h1 style="color:var(--brass-gold); letter-spacing: 5px;">BRASS BIRMINGHAM</h1>
-    <p>VÄLJ DIN INFORMATION SNIVÅ</p>
-    <div style="display:flex; gap: 20px;">
-        <button onclick="startGame(1)">1: GRUNDLÄGGANDE</button>
-        <button onclick="startGame(2)">2: AVANCERAD</button>
-        <button onclick="startGame(3)">3: TOTAL KONTROLL</button>
+    <div id="splash">
+        <h1 style="color:#d4af37">BRASS BIRMINGHAM</h1>
+        <p>Välj informationsnivå:</p>
+        <button onclick="start(1)">1: GRUND</button>
+        <button onclick="start(2)">2: AVANCERAD</button>
+        <button onclick="start(3)">3: TOTAL</button>
     </div>
-</div>
-
-<div id="app-ui" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center;">
     <div id="chat-output"></div>
-    <div class="input-container">
-        <input type="text" id="user-input" placeholder="Ställ en fråga till maskineriet...">
-        <button onclick="handleUserInput()">SKICKA</button>
+    <div style="width: 100%; display: flex; justify-content: center; gap: 10px;">
+        <input type="text" id="input" placeholder="Fråga Berättaren...">
+        <button onclick="send()">SKICKA</button>
     </div>
-</div>
-
-<script>
-    let currentLevel = 1;
-
-    function startGame(level) {
-        currentLevel = level;
-        document.getElementById('splash-screen').classList.add('hidden');
-        document.getElementById('app-ui').classList.remove('hidden');
-        sendToAgent("Hälsa oss välkomna och förklara att vi spelar på nivå " + level);
-    }
-
-    async function handleUserInput() {
-        const inputField = document.getElementById('user-input');
-        const message = inputField.value.trim();
-        if (!message) return;
-
-        const chatOutput = document.getElementById('chat-output');
-        chatOutput.innerHTML += `<div class="user-message">NI: ${message}</div>`;
-        inputField.value = '';
-        chatOutput.scrollTop = chatOutput.scrollHeight;
-
-        await sendToAgent(message);
-    }
-
-    async function sendToAgent(message) {
-        const chatOutput = document.getElementById('chat-output');
-        const thoughtDiv = document.createElement('div');
-        thoughtDiv.className = 'thought';
-        thoughtDiv.textContent = "MASKINEN ANALYSERAR SOTET OCH DATAN...";
-        chatOutput.appendChild(thoughtDiv);
-
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userMessage: message, infoLevel: currentLevel })
-            });
-            const data = await response.json();
-            chatOutput.removeChild(thoughtDiv);
-            
-            const answerDiv = document.createElement('div');
-            answerDiv.className = 'agent-answer';
-            chatOutput.appendChild(answerDiv);
-            
-            // Telegraf-effekt
-            let i = 0;
-            const text = data.reply || "[INGET SVAR]";
-            const timer = setInterval(() => {
-                if (i < text.length) {
-                    answerDiv.innerHTML += text.charAt(i);
-                    i++;
-                    chatOutput.scrollTop = chatOutput.scrollHeight;
-                } else {
-                    clearInterval(timer);
-                }
-            }, 15);
-
-        } catch (e) {
-            if(thoughtDiv) chatOutput.removeChild(thoughtDiv);
-            chatOutput.innerHTML += `<div class="agent-answer">[SYSTEMHALT: KOMMUNIKATIONSFEL]</div>`;
+    <script>
+        let lvl = 1;
+        function start(l) { lvl = l; document.getElementById('splash').classList.add('hidden'); sendToAgent("Hälsa oss välkomna."); }
+        function send() { const i = document.getElementById('input'); if(!i.value) return; document.getElementById('chat-output').innerHTML += `<div class='user-msg'>NI: ${i.value}</div>`; sendToAgent(i.value); i.value = ''; }
+        async function sendToAgent(m) {
+            const out = document.getElementById('chat-output');
+            const t = document.createElement('div'); t.textContent = "MASKINEN TÄNKER..."; out.appendChild(t);
+            try {
+                const r = await fetch('/api/chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userMessage: m, infoLevel: lvl })});
+                const d = await r.json(); out.removeChild(t);
+                const a = document.createElement('div'); a.className = 'agent-msg'; out.appendChild(a);
+                let x = 0; const txt = d.reply || "[INGET SVAR]";
+                const timer = setInterval(() => { if(x < txt.length) { a.innerHTML += txt.charAt(x); x++; out.scrollTop = out.scrollHeight; } else clearInterval(timer); }, 15);
+            } catch(e) { out.innerHTML += "<div>[FEL I LEDNINGARNA]</div>"; }
         }
-    }
-
-    document.getElementById('user-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleUserInput(); });
-</script>
+    </script>
 </body>
 </html>
