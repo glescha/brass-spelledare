@@ -20,7 +20,7 @@ module.exports = async function handler(req, res) {
                 break;
             }
         }
-        if (!process.env.GOOGLE_API_KEY) return res.status(500).json({ reply: "[FEIL: API-nyckel saknas i Vercel Settings]" });
+        if (!process.env.GOOGLE_API_KEY) return res.status(500).json({ reply: "[FEL: API-nyckel saknas i Vercel Settings]" });
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash",
             systemInstruction: `Du är Den Industriella Berättaren i Brass Birmingham. Mörk och allvarlig tonalitet. Använd EXAKT detta källmaterial: ${manifesto}. Nivå: ${infoLevel}`
